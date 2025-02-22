@@ -453,6 +453,35 @@ resource "aws_wafv2_web_acl" "example" {
 }
 ```
 
+### Data Protection
+
+```terraform
+resource "aws_wafv2_web_acl" "example" {
+  name  = "rule-name"
+  scope = "REGIONAL"
+
+  default_action {
+    allow {}
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = false
+    metric_name                = "friendly-metric-name"
+    sampled_requests_enabled   = false
+  }
+
+  data_protection {
+    action = "SUBSTITUTION"
+    field {
+     field_type = "SINGLE_HEADER"
+     field_keys = ["Authorization", "X-Api-Key"]
+    }
+    exclude_rule_based_details = false
+    exclude_rule_match_details = false
+  }
+}
+```
+
 ## Argument Reference
 
 This resource supports the following arguments:
@@ -1132,6 +1161,21 @@ Use the request's URI path as an aggregate key. Each distinct URI path contribut
 The `uri_path` block supports the following arguments:
 
 * `text_transformation`: Text transformations eliminate some of the unusual formatting that attackers use in web requests in an effort to bypass detection. They are used in rate-based rule statements, to transform request components before using them as custom aggregation keys. Atleast one transformation is required. See [`text_transformation`](#text_transformation-block) above for details.
+
+### `data_protection` Block
+
+The `data_protection` block supports the following arguments:
+
+* `action` - (Required) Specifies how to protect the field. AWS WAF can apply a one-way hash to the field or hard code a string substitution. Valid values are `SUBSTITUTION` and `HASH`.
+* `field` - (Required) Specifies the field type and optional keys to apply the protection behavior to. See [`field`](#field-block) below for details.
+* `exclude_rate_based_details` - (Optional) Specifies whether to also exclude any rate-based rule details from the data protection you have enabled for a given field. If you specify this exception, RateBasedDetails will show the value of the field. For additional information, see the log field `rateBasedRuleList` at [Log fields for web ACL traffic](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) in the AWS WAF Developer Guide.
+* `exclude_rule_match_details` - (Optional) Specifies whether to also exclude any rule match details from the data protection you have enabled for a given field. AWS WAF logs these details for non-terminating matching rules and for the terminating matching rule. For additional information, see [Log fields for web ACL traffic](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) in the AWS WAF Developer Guide.
+
+### `field` Block
+
+The `field` block supports the following arguments:
+* `field_type` -  (Required) Specifies the web request component type to protect.  Valid values are `SINGLE_HEADER`, `SINGLE_COOKIE`, `SINGLE_QUERY_ARGUMENT`, `QUERY_STRING`, and `BODY`.
+* `field_keys` - (Optional) Specifies the keys to protect for the specified field type. If you don't specify any key, then all keys for the field type are protected. 
 
 ## Attribute Reference
 
